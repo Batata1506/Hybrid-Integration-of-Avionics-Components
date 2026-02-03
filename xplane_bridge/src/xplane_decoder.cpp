@@ -3,6 +3,7 @@
 #include <cstring>   // std::memcpy (safe byte copying)
 #include <iostream>  // std::cout, std::cerr
 
+
 // This function reads a 32-bit integer from the packet.
 // "LE" means "little-endian", which is how X-Plane sends these values on typical PCs.
 int32_t XPlaneDataDecoder::read_i32_le(const std::vector<uint8_t>& packet, size_t offset) const {
