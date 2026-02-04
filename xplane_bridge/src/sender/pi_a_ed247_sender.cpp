@@ -9,10 +9,6 @@
 
 #include <ed247.h>
 
-static void sleep_until_next(std::chrono::steady_clock::time_point& next, int period_ms){
-    next += std::chrono::milliseconds(period_ms);
-    std::this_thread::sleep_until(next);
-}
 
 int main() {
     const uint16_t xplane_port  = 49000;
@@ -51,17 +47,22 @@ int main() {
 
     AfdxBuilder builder;
 
-    auto next_20hz = std::chrono::steady_clock::now();
-    auto next_10hz = std::chrono::steady_clock::now();
+    // Each VL has its own "next time it is allowed to send" (this is BAG scheduling).
+    auto next_att = std::chrono::steady_clock::now();   // VL1001_ATT (BAG 50ms)
+    auto next_spd = std::chrono::steady_clock::now();   // VL1002_SPD (BAG 100ms)
+    auto next_alt = std::chrono::steady_clock::now();   // VL1003_ALT (BAG 100ms)
+
 
     std::cout << "Pi A: UDP decode -> AFDX -> ED247 send\n";
 
     while (true)
     {
+        const auto now = std::chrono::steady_clock::now();
+
         std::string ip;
         uint16_t src_port = 0;
 
-        auto pkt = rx.recv_packet(&ip, &src_port);
+        auto pkt = rx.recv_packet(&ip,&src_port);
 
         if(!pkt.empty()){
             auto decoded = decoder.decode(pkt);
@@ -70,31 +71,76 @@ int main() {
                 latest = *decoded;
                 have_latest = true;
             }
+            
         }
 
         if (!have_latest)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
+        }
 
-        if (std::chrono::steady_clock::now() >= next_20hz)
+        bool pushed_anything = false;
+
+        // VL1001: create and push to ED247 stream
+        if (now >= next_att)
         {
             auto att = builder.build_attitude(latest);
-            ed247_stream_push_sample(s_att, att.data(), (uint32_t)att.size(), nullptr, nullptr);
-            ed247_send_pushed_samples(ctx);
+            ed247_stream_push_sample(
+                s_att,
+                att.data(),
+                (uint32_t)att.size(),
+                nullptr,
+                nullptr
+            );
 
-            sleep_until_next(next_20hz, 50);
+            next_att += std::chrono::milliseconds(50);
+            pushed_anything = true;
         }
 
-        if (std::chrono::steady_clock::now() >= next_10hz)
+        // VL1002: create and push to ED247 stream
+        if (now >= next_spd)
         {
             auto spd = builder.build_airspeed(latest);
-            auto alt = builder.build_altitude(latest);
+            ed247_stream_push_sample(
+                s_spd,
+                spd.data(),
+                (uint32_t)spd.size(),
+                nullptr,
+                nullptr
+            );
 
-            ed247_stream_push_sample(s_spd, spd.data(), (uint32_t)spd.size(), nullptr, nullptr);
-            ed247_stream_push_sample(s_alt, alt.data(), (uint32_t)alt.size(), nullptr, nullptr);
-            ed247_send_pushed_samples(ctx);
-
-            sleep_until_next(next_10hz, 100);
+            next_spd += std::chrono::milliseconds(100);
+            pushed_anything = true;
         }
+
+        // VL1003: create and push to ED247 stream
+        if (now >= next_alt)
+        {
+            auto alt = builder.build_altitude(latest);
+            ed247_stream_push_sample(
+                s_alt,
+                alt.data(),
+                (uint32_t)alt.size(),
+                nullptr,
+                nullptr
+            );
+
+            next_alt += std::chrono::milliseconds(100);
+            pushed_anything = true;
+        }
+
+        // transmit queued ED247 samples
+        if(pushed_anything){
+            ed247_send_pushed_samples(ctx);
+        }
+
+
+        if (next_att < now) next_att = now;                           // Reset to now if behind
+        if (next_spd < now) next_spd = now;
+        if (next_alt < now) next_alt = now;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));    
     }
 
     ed247_unload(ctx);

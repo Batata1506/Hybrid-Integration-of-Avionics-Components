@@ -55,7 +55,7 @@ std::optional<FlightState> XPlaneDataDecoder::decode(const std::vector<uint8_t>&
         return std::nullopt;
     }
 
-    FlightState state; // we will fill this later (altitude, pitch, roll, etc.)
+    FlightState state; 
 
     // After "DATA\0", the blocks begin at byte offset 5.
     size_t offset = 5;
@@ -68,7 +68,7 @@ std::optional<FlightState> XPlaneDataDecoder::decode(const std::vector<uint8_t>&
         int32_t group = read_i32_le(packet, offset);
 
         // Print the group number so we can see what X-Plane is sending.
-        std::cout << "DATA group index: " << group << "\n";
+        //std::cout << "DATA group index: " << group << "\n";
 
         float f[8];
         for (int i = 0; i < 8; i++)
@@ -111,7 +111,5 @@ std::optional<FlightState> XPlaneDataDecoder::decode(const std::vector<uint8_t>&
         offset += 36;
     }
 
-    // For now, we return an "empty" state.
-    // Next step: map group floats into real flight values.
     return state;
 }
