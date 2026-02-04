@@ -47,7 +47,6 @@ int main() {
 
     AfdxBuilder builder;
 
-    // Each VL has its own "next time it is allowed to send" (this is BAG scheduling).
     auto next_att = std::chrono::steady_clock::now();   // VL1001_ATT (BAG 50ms)
     auto next_spd = std::chrono::steady_clock::now();   // VL1002_SPD (BAG 100ms)
     auto next_alt = std::chrono::steady_clock::now();   // VL1003_ALT (BAG 100ms)
