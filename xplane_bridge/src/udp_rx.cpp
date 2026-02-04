@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <cstring>
 #include <iostream>
+#include <fcntl.h>
 
 
 UdpReceiver::~UdpReceiver() {
@@ -25,8 +26,26 @@ bool UdpReceiver::open(uint16_t port) {
         return false;
     }
 
-    sockaddr_in addr{};
+    int flags = ::fcntl(sock_,F_GETFL,0);
+    if (flags > 0)
+    {
+        std::cerr << "fcntl(F_GETFL) failed: " << std::strerror(errno) << "\n";
+        ::close(sock_);
+        sock_ = -1;
+        return false;
+    }
 
+    if (::fcntl(sock_, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        std::cerr << "fnctl(F_SETFL) failed " << std::strerror(errno) << "\n";
+        ::close(sock_);
+        sock_ = -1;
+        return false;
+    }
+    
+    
+
+    sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(port);
@@ -60,6 +79,11 @@ std::vector<uint8_t> UdpReceiver::recv_packet(std::string* src_ip, uint16_t* src
 
     if (n < 0)
     {
+        if (errno == EAGAIN || errno ++ EWOULDBLOCK)
+        {
+            return {};
+        }
+        
         std::cerr << "recvfrom() failed: " <<std::strerror(errno) << "\n";
         return {};
     }

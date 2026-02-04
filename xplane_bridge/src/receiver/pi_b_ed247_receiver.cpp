@@ -7,10 +7,13 @@
 
 // Read a struct from raw bytes safely
 template <typename T>
-static bool read_struct(const uint8_t* data, size_t len, size_t offset, T& out)
+static bool read_struct(const void* data, size_t len, size_t offset, T& out)
 {
-    if (offset + sizeof(T) > len) return false;           // bounds check
-    std::memcpy(&out, data + offset, sizeof(T));          // copy bytes into struct
+    if (offset + sizeof(T) > len) return false;                      // bounds check
+
+    const uint8_t* bytes = static_cast<const uint8_t*>(data);        // convert void* to byte pointer
+
+    std::memcpy(&out, bytes + offset, sizeof(T));                    // now arithmetic is valid
     return true;
 }
 
@@ -37,62 +40,75 @@ int main()
 
     std::cout << "Pi B: ED247 receive -> unpack AFDX-like -> print\n";
 
+    ed247_internal_stream_list_t* ready_streams = nullptr;
+
+
     while (true)
     {
-        // Wait up to 10 ms for new data (prevents 100% CPU spinning)
-        ed247_wait_during(ctx, 10000);
+        // Wait up to 10 ms
+        ed247_wait_during(ctx, &ready_streams, 10000);
 
-        // Buffer for incoming sample
-        uint8_t buf[512];
-        uint32_t size = sizeof(buf);
+        const void* data = nullptr;
+        uint32_t size = 0;
+        const ed247_timestamp_t* rts = nullptr;
+        const ed247_timestamp_t* sts = nullptr;
+        const ed247_sample_details_t* details = nullptr;
+        bool last = false;
 
-        // ---- Pop attitude samples ----
-        while (ed247_stream_pop_sample(s_att, buf, &size) == ED247_STATUS_SUCCESS) {
+        // ---- Attitude ----
+        while (ed247_stream_pop_sample(
+                   s_att, &data, &size, &rts, &sts, &details, &last
+               ) == ED247_STATUS_SUCCESS)
+        {
             AFDXHeader hdr{};
-            if (!read_struct(buf, size, 0, hdr)) break;
-
             AttitudePayload pl{};
-            if (!read_struct(buf, size, sizeof(AFDXHeader), pl)) break;
 
-            std::cout << "[VL" << hdr.vl_id << " seq=" << hdr.seq << "] "
-                      << "PITCH=" << pl.pitch_deg
-                      << " ROLL=" << pl.roll_deg
-                      << " HDG=" << pl.hdg_deg
-                      << "\n";
-
-            size = sizeof(buf); // reset size for next pop
+            if (read_struct(data, size, 0, hdr) &&
+                read_struct(data, size, sizeof(AFDXHeader), pl))
+            {
+                std::cout << "[ATT VL=" << hdr.vl_id
+                          << " seq=" << hdr.seq
+                          << "] P=" << pl.pitch_deg
+                          << " R=" << pl.roll_deg
+                          << " H=" << pl.hdg_deg
+                          << "\n";
+            }
         }
 
-        // ---- Pop airspeed samples ----
-        size = sizeof(buf);
-        while (ed247_stream_pop_sample(s_spd, buf, &size) == ED247_STATUS_SUCCESS) {
+        // ---- Airspeed ----
+        while (ed247_stream_pop_sample(
+                   s_spd, &data, &size, &rts, &sts, &details, &last
+               ) == ED247_STATUS_SUCCESS)
+        {
             AFDXHeader hdr{};
-            if (!read_struct(buf, size, 0, hdr)) break;
-
             AirSpeedPayload pl{};
-            if (!read_struct(buf, size, sizeof(AFDXHeader), pl)) break;
 
-            std::cout << "[VL" << hdr.vl_id << " seq=" << hdr.seq << "] "
-                      << "KIAS=" << pl.kias
-                      << "\n";
-
-            size = sizeof(buf);
+            if (read_struct(data, size, 0, hdr) &&
+                read_struct(data, size, sizeof(AFDXHeader), pl))
+            {
+                std::cout << "[SPD VL=" << hdr.vl_id
+                          << " seq=" << hdr.seq
+                          << "] KIAS=" << pl.kias
+                          << "\n";
+            }
         }
 
-        // ---- Pop altitude samples ----
-        size = sizeof(buf);
-        while (ed247_stream_pop_sample(s_alt, buf, &size) == ED247_STATUS_SUCCESS) {
+        // ---- Altitude ----
+        while (ed247_stream_pop_sample(
+                   s_alt, &data, &size, &rts, &sts, &details, &last
+               ) == ED247_STATUS_SUCCESS)
+        {
             AFDXHeader hdr{};
-            if (!read_struct(buf, size, 0, hdr)) break;
-
             AltitudePayload pl{};
-            if (!read_struct(buf, size, sizeof(AFDXHeader), pl)) break;
 
-            std::cout << "[VL" << hdr.vl_id << " seq=" << hdr.seq << "] "
-                      << "ALT(ft)=" << pl.alt_msl_ft
-                      << "\n";
-
-            size = sizeof(buf);
+            if (read_struct(data, size, 0, hdr) &&
+                read_struct(data, size, sizeof(AFDXHeader), pl))
+            {
+                std::cout << "[ALT VL=" << hdr.vl_id
+                          << " seq=" << hdr.seq
+                          << "] ALT=" << pl.alt_msl_ft
+                          << "\n";
+            }
         }
     }
 
