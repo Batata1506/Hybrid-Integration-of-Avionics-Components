@@ -79,9 +79,9 @@ std::vector<uint8_t> UdpReceiver::recv_packet(std::string* src_ip, uint16_t* src
 
     if (n < 0)
     {
-        if (errno == EAGAIN || errno ++ EWOULDBLOCK)
+        if (errno == EAGAIN || errno == EWOULDBLOCK)             
         {
-            return {};
+            return {};                    
         }
         
         std::cerr << "recvfrom() failed: " <<std::strerror(errno) << "\n";
