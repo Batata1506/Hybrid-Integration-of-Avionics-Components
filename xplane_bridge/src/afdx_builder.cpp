@@ -36,6 +36,7 @@ std::vector<uint8_t> AfdxBuilder::build_airspeed(const FlightState& st){
 
     AirSpeedPayload payload{};
     payload.kias = st.kias;
+    payload.ktas = st.ktas;
 
     AFDXHeader hdr{};
     hdr.version = 1;

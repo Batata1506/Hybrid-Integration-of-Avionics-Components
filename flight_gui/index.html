@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>FlightState</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(200px, 1fr)); gap: 14px; }
+    .card { border: 1px solid #3333; border-radius: 12px; padding: 14px; }
+    .label { opacity: 0.7; font-size: 14px; }
+    .value { font-size: 32px; font-weight: 700; margin-top: 6px; }
+    .status { margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <div class="status">WebSocket: <span id="st">disconnected</span></div>
+
+  <div class="grid">
+    <div class="card"><div class="label">KIAS</div><div class="value" id="kias">--</div></div>
+    <div class="card"><div class="label">KTAS</div><div class="value" id="ktas">--</div></div>
+    <div class="card"><div class="label">KTGS</div><div class="value" id="ktgs">--</div></div>
+    <div class="card"><div class="label">Pitch (deg)</div><div class="value" id="pitch">--</div></div>
+    <div class="card"><div class="label">Roll (deg)</div><div class="value" id="roll">--</div></div>
+    <div class="card"><div class="label">Heading (deg)</div><div class="value" id="hdg">--</div></div>
+    <div class="card"><div class="label">Altitude (ft)</div><div class="value" id="alt">--</div></div>
+    <div class="card"><div class="label">FPS Actual</div><div class="value" id="fa">--</div></div>
+    <div class="card"><div class="label">FPS Sim</div><div class="value" id="fs">--</div></div>
+  </div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  const st = el("st");
+
+  function fmt(x, d=1){ return (x===undefined||x===null) ? "--" : Number(x).toFixed(d); }
+
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => st.textContent = "connected";
+  ws.onclose = () => st.textContent = "disconnected";
+  ws.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    el("kias").textContent = fmt(d.kias, 1);
+    el("ktas").textContent = fmt(d.ktas, 1);
+    el("ktgs").textContent = fmt(d.ktgs, 1);
+    el("pitch").textContent = fmt(d.pitch_deg, 2);
+    el("roll").textContent  = fmt(d.roll_deg, 2);
+    el("hdg").textContent   = fmt(d.hdg_deg, 1);
+    el("alt").textContent   = fmt(d.alt_msl_ft, 0);
+    el("fa").textContent    = fmt(d.fps_actual, 1);
+    el("fs").textContent    = fmt(d.fps_sim, 1);
+  };
+</script>
+</body>
+</html>

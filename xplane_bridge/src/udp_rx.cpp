@@ -27,7 +27,7 @@ bool UdpReceiver::open(uint16_t port) {
     }
 
     int flags = ::fcntl(sock_,F_GETFL,0);
-    if (flags > 0)
+    if (flags < 0)
     {
         std::cerr << "fcntl(F_GETFL) failed: " << std::strerror(errno) << "\n";
         ::close(sock_);

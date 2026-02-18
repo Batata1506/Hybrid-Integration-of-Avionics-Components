@@ -25,6 +25,7 @@ struct AttitudePayload
 struct AirSpeedPayload
 {
     float kias; // from group 3
+    float ktas;
 };
 
 
