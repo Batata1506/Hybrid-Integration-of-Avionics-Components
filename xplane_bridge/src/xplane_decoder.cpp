@@ -64,7 +64,7 @@ std::optional<FlightState> XPlaneDataDecoder::decode(const std::vector<uint8_t>&
     // - 4 bytes: int group index
     // - 32 bytes: 8 floats (8 * 4 bytes)
     while (offset + 36 <= packet.size()) {
-        // Read group index as an int (this is the FIX).
+        // Read group index as an int.
         int32_t group = read_i32_le(packet, offset);
 
         // Print the group number so we can see what X-Plane is sending.

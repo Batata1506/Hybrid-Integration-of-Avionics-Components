@@ -44,7 +44,7 @@ def udp_thread(loop: asyncio.AbstractEventLoop):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, UDP_PORT))
     while True:
-        data, _addr = sock.recvfrom(65535)  # blocking recv (thread is fine)
+        data, _addr = sock.recvfrom(65535)  # blocking recv 
         msg = data.decode("utf-8", errors="ignore").strip()
 
         # Validate JSON

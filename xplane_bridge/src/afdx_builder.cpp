@@ -22,7 +22,7 @@ std::vector<uint8_t> AfdxBuilder::build_attitude(const FlightState& st) {
     hdr.seq         = ++seq_att_;
     hdr.tx_time_us  = now_us();
     hdr.payload_len = sizeof(payload);
-    hdr.flags       = 0;         // later: use bits for channel A/B
+    hdr.flags       = 0;         // can use bits if want to implement channel A/B
 
     // Convert header + payload into bytes
     append_struct(out, hdr);
