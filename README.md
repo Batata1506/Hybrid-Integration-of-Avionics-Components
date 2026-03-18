@@ -141,8 +141,7 @@ ALT: 10 Hz | missed=0 (0%) | mean latency ≈ 48 ms
 ## Future Work
 
 - Add secure communication (encryption / authentication)  
-- Integrate real avionics interfaces (e.g. ARINC 429, AFDX)  
-- Improve timing determinism and scheduling  
+- Integrate real avionics interfaces (e.g. ARINC 429, AFDX)    
 - Implement fault injection and redundancy testing  
 - Extend closed-loop control capabilities  
 
