@@ -11,7 +11,7 @@
       <ComInterface>
         <UDP_Sockets>
           <UDP_Socket DstIP="0.0.0.0" DstPort="51248" Direction="In"/>
-          <UDP_Socket DstIP="100.103.129.36" DstPort="51249" Direction="Out"/>
+          <UDP_Socket DstIP="192.168.5.1" DstPort="51249" Direction="Out"/>
         </UDP_Sockets>
       </ComInterface>
 
